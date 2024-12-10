@@ -7,7 +7,7 @@ public class Platform {
     private int width, height; //largura e altura da plataforma
 
     //construtor que inicializa a plataforma com posição de tamanho
-    public plataform (int x, int y, int width, int height){
+    public Platform (int x, int y, int width, int height){
         this.x = x; //posição x
         this.y = y; //posição y
         this.width = width; //largura
