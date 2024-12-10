@@ -3,9 +3,6 @@ package game;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
-import levels.Level1;  // Importe a classe Level1
-
-import java.awt.PopupMenu;
 
 // Classe que representa a tela de menu inicial
 public class Menu extends JPanel {
@@ -45,7 +42,7 @@ public class Menu extends JPanel {
         add(exitButton, gbc);
     }
 
-    // Método para iniciar o jogo
+    // Metodo para iniciar o jogo
     private void startGame() {
         frame.getContentPane().removeAll(); // Remove o conteúdo atual
         frame.add(new levels.Level1(frame)); // Adiciona o primeiro nível do jogo
@@ -54,7 +51,7 @@ public class Menu extends JPanel {
         frame.getContentPane().getComponent(0).requestFocusInWindow();
     }
 
-    // Método para abrir as configurações
+    // Metodo para abrir as configurações
     private void openSettings() {
         frame.getContentPane().removeAll(); // Remove o conteúdo atual
         frame.add(new settings.Settings(frame)); // Adiciona a tela de configurações

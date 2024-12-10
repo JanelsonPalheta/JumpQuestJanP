@@ -1,15 +1,15 @@
 package entities;
 
-import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import javax.imageio.ImageIO;
+import java.util.ArrayList;
 
-// Classe Player com sobrecarga do metodo update
 public class Player {
     private int x, y;
-    private final int width = 47, height = 80;
+    private final int width = 28, height = 47;
     private int velocityY = 0;
     private boolean jumping = false;
 
@@ -28,23 +28,33 @@ public class Player {
         return x;
     }
 
-    public void loadImages() {
+    public int getY() {
+        return y;
+    }
+
+    public void setY(int y) {
+        this.y = y;
+    }
+
+    public int getHeight() {
+        return height;
+    }
+
+    public boolean isJumping() {
+        return jumping;
+    }
+
+    public void setJumping(boolean jumping) {
+        this.jumping = jumping;
+    }
+
+    private void loadImages() {
         try {
             for (int i = 0; i < moveRightImages.length; i++) {
-                File moveRightFile = new File("src/images/moveRight/move" + i + ".png");
-                if (!moveRightFile.exists()) {
-                    System.out.println("Arquivo não encontrado: " + moveRightFile.getAbsolutePath());
-                } else {
-                    moveRightImages[i] = ImageIO.read(moveRightFile);
-                }
+                moveRightImages[i] = ImageIO.read(new File("src/images/moveRight/move" + i + ".png"));
             }
             for (int i = 0; i < moveLeftImages.length; i++) {
-                File moveLeftFile = new File("src/images/moveLeft/move" + i + ".png");
-                if (!moveLeftFile.exists()) {
-                    System.out.println("Arquivo não encontrado: " + moveLeftFile.getAbsolutePath());
-                } else {
-                    moveLeftImages[i] = ImageIO.read(moveLeftFile);
-                }
+                moveLeftImages[i] = ImageIO.read(new File("src/images/moveLeft/move" + i + ".png"));
             }
         } catch (IOException e) {
             System.out.println("Erro ao carregar imagens do jogador.");
@@ -56,59 +66,32 @@ public class Player {
         BufferedImage currentImage = facingRight ? moveRightImages[currentFrame] : moveLeftImages[currentFrame];
         if (currentImage != null) {
             g.drawImage(currentImage, x, y, width, height, null);
-        } else {
-            System.out.println("Erro: imagem atual é nula.");
         }
     }
 
-    private int animationDelay = 5; // Intervalo entre os quadros
-    private int animationCounter = 0;
-
-    public void updateAnimation() {
-        animationCounter++;
-        if (animationCounter >= animationDelay) {
-            currentFrame = (currentFrame + 1) % 9;
-            animationCounter = 0;
-        }
-    }
-
-    // Sobrecarregado: metodo update sem argumentos
-    public void update() {
-        if (!jumping) {
-            velocityY = 0; // Evita ajustes contínuos ao pousar
-        } else {
-            velocityY += 1;
-            if (velocityY > 10) velocityY = 10;
-        }
-        y += velocityY;
-    }
-
-    // Sobrecarregado: metodo update com plataforma (Rectangle)
-    public void update(Rectangle ground) {
-        velocityY += 1; // Aplicação da gravidade
+    public void update(ArrayList<Platform> platforms) {
+        velocityY += 1; // Gravidade
         if (velocityY > 10) velocityY = 10;
         y += velocityY;
 
-        // Verifica colisão com o chão
-        Rectangle playerBounds = new Rectangle(x, y + height, width, 1);
-        if (playerBounds.intersects(ground)) {
-            if (velocityY > 0) { // Apenas ajusta a posição se estiver caindo
-                y = ground.y - height;
-                velocityY = 0;
-                jumping = false; // Atualiza o estado de pulo apenas ao pousar
+        for (Platform platform : platforms) {
+            if (isColliding(platform.getBounds())) {
+                if (velocityY > 0) { // Apenas ajusta se estiver caindo
+                    y = platform.getBounds().y - height; // Posição acima da plataforma
+                    velocityY = 0;
+                    jumping = false;
+                    break;
+                }
             }
-        } else {
-            jumping = true; // Atualiza o estado ao sair do chão
         }
     }
 
     public void jump() {
-        if (!jumping) { // Permite pular apenas se não estiver no ar
+        if (!jumping) {
             jumping = true;
-            velocityY = -15;
+            velocityY = -20;
         }
     }
-
 
     public void moveLeft() {
         x -= 5;
@@ -122,40 +105,11 @@ public class Player {
         updateAnimation();
     }
 
-    public void resetVelocity() {
-        velocityY = 0;
+    private void updateAnimation() {
+        currentFrame = (currentFrame + 1) % 9;
     }
 
-    public boolean isJumping() {
-        return jumping;
+    private boolean isColliding(Rectangle rect) {
+        return new Rectangle(x, y, width, height).intersects(rect);
     }
-
-    public void setJumping(boolean jumping) {
-        this.jumping = jumping;
-    }
-
-    public void setY(int y) {
-        this.y = y;
-    }
-
-    public int getY() {
-        return y;
-    }
-
-    public int getHeight() {
-        return height;
-    }
-
-    public int getVelocityY() {
-        return velocityY;
-    }
-
-    public boolean isColliding(Rectangle rect) {
-        boolean collision = new Rectangle(x, y, width, height).intersects(rect);
-        if (collision) {
-            System.out.println("Colisão detectada! Player: (" + x + ", " + y + "), Plataforma: " + rect);
-        }
-        return collision;
-    }
-
 }

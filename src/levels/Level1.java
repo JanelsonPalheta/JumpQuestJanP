@@ -2,11 +2,13 @@ package levels;
 
 import entities.Player;
 import entities.Platform;
-
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.util.ArrayList;
+import javax.imageio.ImageIO;
+import java.io.File;
+import java.io.IOException;
 
 public class Level1 extends JPanel implements Runnable, KeyListener {
     private final JFrame frame;
@@ -17,11 +19,23 @@ public class Level1 extends JPanel implements Runnable, KeyListener {
     private boolean leftPressed = false;
     private boolean rightPressed = false;
     private boolean spacePressed = false;
+    private Image background1, background2, background3;
 
     public Level1(JFrame frame) {
         this.frame = frame;
-        player = new Player(100, 421);
-        platforms.add(new Platform(0, 500, 800, 20));
+        player = new Player(100, 460);
+
+        // Adicionar plataformas fixas
+        platforms.add(new Platform(200, 400, 100, 20));
+        platforms.add(new Platform(400, 300, 100, 20));
+        platforms.add(new Platform(0, 965, 1920, 20)); // Chão principal
+
+        try {
+            background1 = ImageIO.read(new File("src/images/background1.png"));
+            background2 = ImageIO.read(new File("src/images/background2.png"));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
         setFocusable(true);
         addKeyListener(this);
@@ -35,7 +49,7 @@ public class Level1 extends JPanel implements Runnable, KeyListener {
             updateGame();
             repaint();
             try {
-                Thread.sleep(15); // Intervalo consistente para manter 60 FPS
+                Thread.sleep(15);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
@@ -43,54 +57,16 @@ public class Level1 extends JPanel implements Runnable, KeyListener {
     }
 
     private void updateGame() {
-        boolean isOnPlatform = false;
+        player.update(platforms);
 
-        for (Platform platform : platforms) {
-            if (player.isColliding(platform.getBounds())) {
-                Rectangle platformBounds = platform.getBounds();
-                System.out.println("Verificando colisão: Player em (" + player.getX() + ", " + player.getY() + "), Plataforma em " + platformBounds);
-
-                System.out.println("Player Bottom: " + (player.getY() + player.getHeight()) + ", Platform Top: " + platformBounds.y);
-                System.out.println("VelocityY antes do ajuste: " + player.getVelocityY());
-
-                if (player.getY() + player.getHeight() >= platformBounds.y - 10
-                        && player.getY() + player.getHeight() <= platformBounds.y + 10) {
-                    System.out.println("Colisão válida! Ajustando posição do jogador.");
-                    player.setY(platformBounds.y - player.getHeight());
-                    player.resetVelocity();
-                    isOnPlatform = true;
-                    break; // Encerra o loop para evitar sobrescrita do estado
-                } else {
-                    System.out.println("Colisão detectada, mas inválida para ajuste.");
-                }
-            }
-        }
-
-        if (!isOnPlatform) {
-            player.update(); // Só aplica gravidade se não estiver sobre uma plataforma
-        } else {
-            player.setJumping(false); // Evita estado inconsistente de pulo
-        }
-
-        // Permite pulo apenas se estiver sobre uma plataforma
-        if (spacePressed && isOnPlatform) {
-            System.out.println("Comando de pulo detectado.");
+        if (spacePressed && !player.isJumping()) {
             player.jump();
         }
 
-        // Movimentos laterais
-        if (leftPressed) {
-            System.out.println("Movendo para a esquerda.");
-            player.moveLeft();
-        }
-        if (rightPressed) {
-            System.out.println("Movendo para a direita.");
-            player.moveRight();
-        }
+        if (leftPressed) player.moveLeft();
+        if (rightPressed) player.moveRight();
 
-        // Verifica se o jogador caiu da tela
         if (player.getY() > getHeight()) {
-            System.out.println("Game Over! Jogador caiu da tela.");
             gameOver = true;
             frame.getContentPane().removeAll();
             frame.add(new JLabel("Game Over!"));
@@ -99,17 +75,29 @@ public class Level1 extends JPanel implements Runnable, KeyListener {
         }
     }
 
-
-
-
     @Override
     public void paintComponent(Graphics g) {
         super.paintComponent(g);
-        player.draw(g);
+        int panelWidth = getWidth();
+        int panelHeight = getHeight();
 
+        // Desenhar fundo
+        if (background1 != null) {
+            g.drawImage(background1, 0, 0, panelWidth, panelHeight, null);
+        }
+
+        // Desenhar plataformas
         for (Platform platform : platforms) {
             platform.draw(g);
         }
+
+        // Desenhar chão por cima das plataformas
+        if (background2 != null) {
+            g.drawImage(background2, 0, 580, panelWidth, 510, null);
+        }
+
+        // Desenhar o jogador
+        player.draw(g);
     }
 
     @Override
