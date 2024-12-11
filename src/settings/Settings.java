@@ -12,11 +12,14 @@ public class Settings extends JPanel {
     private JButton soundButton; // Botão para ativar/desativar som
     private boolean soundOn = true; // Estado do som (ligado por padrão)
 
+    // Variável estática para armazenar a dificuldade global
+    private static String difficulty = "Fácil"; // Dificuldade padrão
+
     public Settings(JFrame frame) {
         this.frame = frame;
 
         // Cria um rótulo para exibir a dificuldade selecionada
-        difficultyLabel = new JLabel("Dificuldade: Fácil");
+        difficultyLabel = new JLabel("Dificuldade: " + difficulty);
         difficultyLabel.setFont(new Font("Arial", Font.BOLD, 18));
 
         // Botões para selecionar a dificuldade
@@ -25,9 +28,18 @@ public class Settings extends JPanel {
         JButton hardButton = new JButton("Difícil");
 
         // Define ações para os botões de dificuldade
-        easyButton.addActionListener((ActionEvent e) -> difficultyLabel.setText("Dificuldade: Fácil"));
-        mediumButton.addActionListener((ActionEvent e) -> difficultyLabel.setText("Dificuldade: Médio"));
-        hardButton.addActionListener((ActionEvent e) -> difficultyLabel.setText("Dificuldade: Difícil"));
+        easyButton.addActionListener((ActionEvent e) -> {
+            difficultyLabel.setText("Dificuldade: Fácil");
+            setDifficulty("Fácil");
+        });
+        mediumButton.addActionListener((ActionEvent e) -> {
+            difficultyLabel.setText("Dificuldade: Médio");
+            setDifficulty("Médio");
+        });
+        hardButton.addActionListener((ActionEvent e) -> {
+            difficultyLabel.setText("Dificuldade: Difícil");
+            setDifficulty("Difícil");
+        });
 
         // Botão para ativar/desativar som
         soundButton = new JButton("Som: Ligado");
@@ -80,4 +92,17 @@ public class Settings extends JPanel {
         frame.revalidate(); // Atualiza o layout
         frame.repaint(); // Redesenha a janela
     }
+
+    // Métodos estáticos para acessar e alterar a dificuldade global
+    public static String getDifficulty() {
+        return difficulty;
+    }
+
+    // Atualizar GameSettings ao definir a dificuldade
+    public static void setDifficulty(String difficulty) {
+        Settings.difficulty = difficulty;
+        GameSettings.getInstance().setDifficulty(difficulty); // Atualiza o singleton
+        System.out.println("Dificuldade definida para: " + difficulty); // Log
+    }
+
 }
