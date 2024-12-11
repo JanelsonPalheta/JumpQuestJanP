@@ -24,6 +24,10 @@ public class Player {
         loadImages();
     }
 
+    public Rectangle getBounds() {
+        return new Rectangle(x, y, width, height);
+    }
+
     public int getX() {
         return x;
     }
@@ -89,7 +93,7 @@ public class Player {
     public void jump() {
         if (!jumping) {
             jumping = true;
-            velocityY = -20;
+            velocityY = -18;
         }
     }
 
