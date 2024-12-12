@@ -102,7 +102,6 @@ public class Settings extends JPanel {
     public static void setDifficulty(String difficulty) {
         Settings.difficulty = difficulty;
         GameSettings.getInstance().setDifficulty(difficulty); // Atualiza o singleton
-        System.out.println("Dificuldade definida para: " + difficulty); // Log
     }
 
 }

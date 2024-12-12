@@ -44,7 +44,6 @@ public class Menu extends JPanel {
 
     // Metodo para iniciar o jogo
     private void startGame() {
-        System.out.println("Iniciando jogo..."); // Log
         frame.getContentPane().removeAll(); // Remove o conteúdo atual
         frame.add(new levels.Level1(frame)); // Adiciona o primeiro nível do jogo
         frame.revalidate(); // Atualiza o layout

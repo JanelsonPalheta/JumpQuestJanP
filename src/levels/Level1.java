@@ -39,15 +39,15 @@ public class Level1 extends JPanel implements Runnable, KeyListener {
         // Configuração da dificuldade
         adjustDifficulty();
 
-        // Adicionar plataformas fixas
-        platforms.add(new Platform(200, 50, 100, 20));
-        platforms.add(new Platform(600, 100, 100, 20));
-        platforms.add(new Platform(900, 200, 100, 20));
-        platforms.add(new Platform(150, 400, 100, 20));
-        platforms.add(new Platform(250, 250, 100, 20));
-        platforms.add(new Platform(300, 550, 100, 20));
-        platforms.add(new Platform(500, 400, 100, 20));
-        platforms.add(new Platform(0, 630, 1280, 20)); // Chão principal
+        // Adicionar plataformas fixas com imagens
+        platforms.add(new Platform(200, 50, 100, 20, "src/images/platforms/platform4.png"));
+        platforms.add(new Platform(600, 100, 100, 20, "src/images/platforms/platform4.png"));
+        platforms.add(new Platform(900, 200, 100, 20, "src/images/platforms/platform4.png"));
+        platforms.add(new Platform(150, 400, 100, 20, "src/images/platforms/platform4.png"));
+        platforms.add(new Platform(250, 250, 100, 20, "src/images/platforms/platform4.png"));
+        platforms.add(new Platform(300, 550, 100, 20, "src/images/platforms/platform4.png"));
+        platforms.add(new Platform(500, 400, 100, 20, "src/images/platforms/platform4.png"));
+        platforms.add(new Platform(0, 630, 1280, 200)); // Chão principal sem imagem
 
         try {
             background1 = ImageIO.read(new File("src/images/background1.png"))
@@ -262,6 +262,7 @@ public class Level1 extends JPanel implements Runnable, KeyListener {
         public boolean hasExploded() {
             return exploded && animationFrame >= explosionFrames.length; // Fim da animação
         }
+
 
         public boolean isCollidingWith(Rectangle rect) {
             if (!exploded) {
