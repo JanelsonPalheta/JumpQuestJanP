@@ -13,6 +13,8 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Random;
 import javax.imageio.ImageIO;
+
+import game.Menu;
 import settings.GameSettings;
 
 public class Level1 extends JPanel implements Runnable, KeyListener {
@@ -20,17 +22,27 @@ public class Level1 extends JPanel implements Runnable, KeyListener {
     private final Player player;
     private final ArrayList<Platform> platforms = new ArrayList<>();
     private final ArrayList<Bomb> bombs = new ArrayList<>();
+    private Image[] collectibleFrames = new Image[6];
+    private Point collectiblePosition;
+    private int score = 0;
+    private int itemsCollected = 0;
+    private final Random random = new Random();
+
     private boolean gameOver = false;
 
     private boolean leftPressed = false;
     private boolean rightPressed = false;
     private boolean spacePressed = false;
     private static Image background1;
-    private final Random random = new Random();
 
     // Variáveis para controle de dificuldade
     private int bombSpawnChance;
     private int bombSpeed;
+
+    private int lives = 3; // Número de vidas iniciais
+    private boolean invulnerable = false;
+    private long invulnerabilityEndTime;
+    private Image lifeIcon;
 
     public Level1(JFrame frame) {
         this.frame = frame;
@@ -47,6 +59,14 @@ public class Level1 extends JPanel implements Runnable, KeyListener {
         platforms.add(new Platform(250, 250, 100, 20, "src/images/platforms/platform4.png"));
         platforms.add(new Platform(300, 550, 100, 20, "src/images/platforms/platform4.png"));
         platforms.add(new Platform(500, 400, 100, 20, "src/images/platforms/platform4.png"));
+        platforms.add(new Platform(400, 100, 100, 20, "src/images/platforms/platform4.png"));  // Altura ajustada
+        platforms.add(new Platform(700, 200, 100, 20, "src/images/platforms/platform4.png"));  // Altura ajustada
+        platforms.add(new Platform(1000, 300, 100, 20, "src/images/platforms/platform4.png")); // Altura ajustada
+        platforms.add(new Platform(200, 450, 100, 20, "src/images/platforms/platform4.png"));  // Altura ajustada
+        platforms.add(new Platform(800, 500, 100, 20, "src/images/platforms/platform4.png"));  // Altura ajustada
+        platforms.add(new Platform(600, 550, 100, 20, "src/images/platforms/platform4.png"));  // Altura ajustada
+        platforms.add(new Platform(50, 300, 100, 20, "src/images/platforms/platform4.png"));   // Altura ajustada
+        platforms.add(new Platform(950, 250, 100, 20, "src/images/platforms/platform4.png"));
         platforms.add(new Platform(0, 630, 1280, 200)); // Chão principal sem imagem
 
         try {
@@ -56,15 +76,38 @@ public class Level1 extends JPanel implements Runnable, KeyListener {
             e.printStackTrace();
         }
 
+        try {
+            for (int i = 0; i < collectibleFrames.length; i++) {
+                collectibleFrames[i] = ImageIO.read(new File("src/images/item/item" + (i + 1) + ".png"))
+                        .getScaledInstance(30, 30, Image.SCALE_SMOOTH);
+            }
+
+        } catch (IOException e) {
+            throw new RuntimeException("Erro ao carregar imagens do item coletável.", e);
+        }
+
+        try {
+            lifeIcon = ImageIO.read(new File("src/images/life.png"))
+                    .getScaledInstance(30, 30, Image.SCALE_SMOOTH);
+        } catch (IOException e) {
+            throw new RuntimeException("Erro ao carregar ícone de vida.", e);
+        }
+        spawnCollectible();
+
+
         setFocusable(true);
         addKeyListener(this);
 
         new Thread(this).start();
     }
 
+    private void spawnCollectible() {
+        Platform platform = platforms.get(random.nextInt(platforms.size() - 1)); // Ignorar o chão
+        collectiblePosition = new Point(platform.getX() + platform.getWidth() / 2 - 15, platform.getY() - 30);
+    }
+
     private void adjustDifficulty() {
         String difficulty = GameSettings.getInstance().getDifficulty();
-        System.out.println("Ajustando dificuldade: " + difficulty); // Log
         switch (difficulty) {
             case "Fácil":
                 bombSpawnChance = 1; // 1% de chance a cada frame
@@ -82,7 +125,6 @@ public class Level1 extends JPanel implements Runnable, KeyListener {
                 bombSpawnChance = 2;
                 bombSpeed = 4;
         }
-        System.out.println("Configurações aplicadas: bombSpawnChance=" + bombSpawnChance + ", bombSpeed=" + bombSpeed); // Log
     }
 
     @Override
@@ -105,18 +147,41 @@ public class Level1 extends JPanel implements Runnable, KeyListener {
     }
 
     private void updateGame() {
+        // Atualiza o jogador com base nas plataformas
         player.update(platforms);
 
+        // Verifica e aplica comandos de movimento
         if (spacePressed && !player.isJumping()) {
             player.jump();
         }
-
         if (leftPressed) player.moveLeft();
         if (rightPressed) player.moveRight();
 
-        System.out.println("Dificuldade atual: " + GameSettings.getInstance().getDifficulty());
+        // Atualiza as bombas
+        updateBombs();
 
-        // Atualizar bombas
+        // Gerencia o estado de invulnerabilidade
+        if (invulnerable && System.currentTimeMillis() > invulnerabilityEndTime) {
+            invulnerable = false;
+        }
+
+        // Verifica coleta de itens
+        checkCollectibleCollision();
+
+        // Adiciona novas bombas com chance definida pela dificuldade
+        if (random.nextInt(100) < bombSpawnChance) {
+            bombs.add(new Bomb(random.nextInt(getWidth() - 30), 0));
+        }
+
+        // Verifica se o jogador caiu fora da tela
+        if (player.getY() > getHeight()) {
+            gameOver = true;
+            endGame();
+        }
+    }
+
+    // Atualiza as bombas e verifica colisões
+    private void updateBombs() {
         Iterator<Bomb> iterator = bombs.iterator();
         while (iterator.hasNext()) {
             Bomb bomb = iterator.next();
@@ -127,33 +192,62 @@ public class Level1 extends JPanel implements Runnable, KeyListener {
                 continue;
             }
 
-            // Verificar colisão com jogador
-            if (Math.abs(bomb.getX() - player.getX()) < 50 && Math.abs(bomb.getY() - player.getY()) < 50) {
-                if (bomb.isCollidingWith(player.getBounds())) {
-                    gameOver = true;
-                    endGame();
-                    return;
-                }
+            // Verifica colisão com o jogador
+            if (!invulnerable && bomb.isCollidingWith(player.getBounds())) {
+                handlePlayerHitByBomb();
+                if (gameOver) return; // Encerra o jogo se vidas acabarem
             }
         }
+    }
 
-        // Adicionar nova bomba aleatoriamente
-        if (random.nextInt(100) < bombSpawnChance) { // Chance definida pela dificuldade
-            bombs.add(new Bomb(random.nextInt(getWidth() - 30), 0));
-        }
+    // Gerencia o evento de colisão entre jogador e bomba
+    private void handlePlayerHitByBomb() {
+        lives--;
+        invulnerable = true;
+        invulnerabilityEndTime = System.currentTimeMillis() + 3000; // 3 segundos de invulnerabilidade
 
-        if (player.getY() > getHeight()) {
+        if (lives <= 0) {
             gameOver = true;
             endGame();
         }
     }
 
+    // Verifica colisão com itens coletáveis
+    private void checkCollectibleCollision() {
+        if (collectiblePosition != null &&
+                new Rectangle(collectiblePosition.x, collectiblePosition.y, 30, 30)
+                        .intersects(player.getBounds())) {
+
+            itemsCollected++;
+            score += (itemsCollected % 10 == 0) ? 50 : 10; // 50 pontos a cada 10 itens, caso contrário, 10 pontos
+            spawnCollectible();
+        }
+    }
+
+
     private void endGame() {
         frame.getContentPane().removeAll();
-        frame.add(new JLabel("Game Over!", SwingConstants.CENTER));
+
+        JLabel gameOverLabel = new JLabel("Game Over!", SwingConstants.CENTER);
+        gameOverLabel.setFont(new Font("Arial", Font.BOLD, 36));
+        frame.add(gameOverLabel);
+        frame.revalidate();
+        frame.repaint();
+
+        // Cria um timer para retornar ao menu principal após 5 segundos
+        Timer timer = new Timer(5000, e -> showMainMenu());
+        timer.setRepeats(false); // Garante que o timer execute apenas uma vez
+        timer.start();
+    }
+
+    // Metodo para exibir o menu principal
+    private void showMainMenu() {
+        frame.getContentPane().removeAll();
+        frame.getContentPane().add(new Menu(frame)); // Adiciona a tela de menu principal
         frame.revalidate();
         frame.repaint();
     }
+
 
     @Override
     public void paintComponent(Graphics g) {
@@ -178,6 +272,31 @@ public class Level1 extends JPanel implements Runnable, KeyListener {
         for (Bomb bomb : bombs) {
             bomb.draw(g2);
         }
+
+        // Desenhar item coletável
+        if (collectiblePosition != null) {
+            g2.drawImage(collectibleFrames[(int) (System.currentTimeMillis() / 100 % collectibleFrames.length)],
+                    collectiblePosition.x, collectiblePosition.y, null);
+        }
+
+        // Desenhar vidas restantes (corações)
+        for (int i = 0; i < lives; i++) {
+            g2.drawImage(lifeIcon, 1100 + i * 35, 10, null);
+        }
+
+        // Efeito de piscar durante invulnerabilidade
+        if (invulnerable && (System.currentTimeMillis() / 200 % 2 == 0)) {
+            g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.5f));
+            player.draw(g2);
+            g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1.0f));
+        } else {
+            player.draw(g2);
+        }
+
+        // Desenhar o score
+        g2.setColor(Color.WHITE);
+        g2.setFont(new Font("Arial", Font.BOLD, 24));
+        g2.drawString("Score: " + score, 20, 40);
 
         g.drawImage(buffer, 0, 0, null);
         g2.dispose();
