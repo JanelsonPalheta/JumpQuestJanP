@@ -28,28 +28,12 @@ public class Player {
         return new Rectangle(x, y, width, height);
     }
 
-    public int getX() {
-        return x;
-    }
-
     public int getY() {
         return y;
     }
 
-    public void setY(int y) {
-        this.y = y;
-    }
-
-    public int getHeight() {
-        return height;
-    }
-
     public boolean isJumping() {
         return jumping;
-    }
-
-    public void setJumping(boolean jumping) {
-        this.jumping = jumping;
     }
 
     private void loadImages() {

@@ -35,10 +35,6 @@ public class Platform {
         return width;
     }
 
-    public int getHeight() {
-        return height;
-    }
-
     public void draw(Graphics g) {
         Graphics2D g2d = (Graphics2D) g;
 

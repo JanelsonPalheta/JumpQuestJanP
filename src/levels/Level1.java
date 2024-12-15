@@ -18,31 +18,42 @@ import game.Menu;
 import settings.GameSettings;
 
 public class Level1 extends JPanel implements Runnable, KeyListener {
-    private final JFrame frame;
-    private final Player player;
-    private final ArrayList<Platform> platforms = new ArrayList<>();
-    private final ArrayList<Bomb> bombs = new ArrayList<>();
-    private Image[] collectibleFrames = new Image[6];
-    private Point collectiblePosition;
-    private int score = 0;
-    private int itemsCollected = 0;
-    private final Random random = new Random();
+    // Janela e Jogador
+    private final JFrame frame;                  // Referência à janela principal do jogo
+    private final Player player;                // Representa o jogador
 
-    private boolean gameOver = false;
+    // Objetos do Jogo
+    private final ArrayList<Platform> platforms = new ArrayList<>(); // Lista de plataformas no nível
+    private final ArrayList<Bomb> bombs = new ArrayList<>();         // Lista de bombas hostis
+    private static Image background1;                                // Imagem do fundo do nível
+    private Image[] collectibleFrames = new Image[6];                // Imagens dos itens coletáveis
+    private Point collectiblePosition;                               // Posição do item coletável atual
 
-    private boolean leftPressed = false;
-    private boolean rightPressed = false;
-    private boolean spacePressed = false;
-    private static Image background1;
+    // Pontuação e Progresso
+    private int score = 0;                   // Pontuação total do jogador
+    private int itemsCollected = 0;          // Quantidade de itens coletados
 
-    // Variáveis para controle de dificuldade
-    private int bombSpawnChance;
-    private int bombSpeed;
+    // Controle Aleatório
+    private final Random random = new Random(); // Gerador de números aleatórios
 
-    private int lives = 3; // Número de vidas iniciais
-    private boolean invulnerable = false;
-    private long invulnerabilityEndTime;
-    private Image lifeIcon;
+    // Controle de Jogo
+    private boolean gameOver = false;        // Indica se o jogo foi finalizado
+
+    // Entrada do Jogador
+    private boolean leftPressed = false;     // Indica se a tecla para a esquerda está pressionada
+    private boolean rightPressed = false;    // Indica se a tecla para a direita está pressionada
+    private boolean spacePressed = false;    // Indica se a tecla de pulo (espaço) está pressionada
+
+    // Controle de Dificuldade
+    private int bombSpawnChance;             // Probabilidade de spawn de bombas
+    private int bombSpeed;                   // Velocidade de movimento das bombas
+
+    // Vidas e Invulnerabilidade
+    private int lives = 3;                   // Número de vidas do jogador
+    private boolean invulnerable = false;    // Indica se o jogador está invulnerável
+    private long invulnerabilityEndTime;     // Tempo de término da invulnerabilidade
+    private Image lifeIcon;                  // Ícone gráfico para exibir vidas restantes
+
 
     public Level1(JFrame frame) {
         this.frame = frame;
@@ -59,13 +70,13 @@ public class Level1 extends JPanel implements Runnable, KeyListener {
         platforms.add(new Platform(250, 250, 100, 20, "src/images/platforms/platform4.png"));
         platforms.add(new Platform(300, 550, 100, 20, "src/images/platforms/platform4.png"));
         platforms.add(new Platform(500, 400, 100, 20, "src/images/platforms/platform4.png"));
-        platforms.add(new Platform(400, 100, 100, 20, "src/images/platforms/platform4.png"));  // Altura ajustada
-        platforms.add(new Platform(700, 200, 100, 20, "src/images/platforms/platform4.png"));  // Altura ajustada
-        platforms.add(new Platform(1000, 300, 100, 20, "src/images/platforms/platform4.png")); // Altura ajustada
-        platforms.add(new Platform(200, 450, 100, 20, "src/images/platforms/platform4.png"));  // Altura ajustada
-        platforms.add(new Platform(800, 500, 100, 20, "src/images/platforms/platform4.png"));  // Altura ajustada
-        platforms.add(new Platform(600, 550, 100, 20, "src/images/platforms/platform4.png"));  // Altura ajustada
-        platforms.add(new Platform(50, 300, 100, 20, "src/images/platforms/platform4.png"));   // Altura ajustada
+        platforms.add(new Platform(400, 100, 100, 20, "src/images/platforms/platform4.png"));
+        platforms.add(new Platform(700, 200, 100, 20, "src/images/platforms/platform4.png"));
+        platforms.add(new Platform(1000, 300, 100, 20, "src/images/platforms/platform4.png"));
+        platforms.add(new Platform(200, 450, 100, 20, "src/images/platforms/platform4.png"));
+        platforms.add(new Platform(800, 500, 100, 20, "src/images/platforms/platform4.png"));
+        platforms.add(new Platform(600, 550, 100, 20, "src/images/platforms/platform4.png"));
+        platforms.add(new Platform(50, 300, 100, 20, "src/images/platforms/platform4.png"));
         platforms.add(new Platform(950, 250, 100, 20, "src/images/platforms/platform4.png"));
         platforms.add(new Platform(0, 630, 1280, 200)); // Chão principal sem imagem
 
@@ -94,160 +105,11 @@ public class Level1 extends JPanel implements Runnable, KeyListener {
         }
         spawnCollectible();
 
-
         setFocusable(true);
         addKeyListener(this);
 
         new Thread(this).start();
     }
-
-    private void spawnCollectible() {
-        Platform platform = platforms.get(random.nextInt(platforms.size() - 1)); // Ignorar o chão
-        collectiblePosition = new Point(platform.getX() + platform.getWidth() / 2 - 15, platform.getY() - 30);
-    }
-
-    private void adjustDifficulty() {
-        String difficulty = GameSettings.getInstance().getDifficulty();
-        switch (difficulty) {
-            case "Fácil":
-                bombSpawnChance = 1; // 1% de chance a cada frame
-                bombSpeed = 3;       // Velocidade reduzida
-                break;
-            case "Médio":
-                bombSpawnChance = 3; // 3% de chance a cada frame
-                bombSpeed = 5;       // Velocidade moderada
-                break;
-            case "Difícil":
-                bombSpawnChance = 6; // 6% de chance a cada frame
-                bombSpeed = 7;       // Velocidade aumentada
-                break;
-            default:
-                bombSpawnChance = 2;
-                bombSpeed = 4;
-        }
-    }
-
-    @Override
-    public void run() {
-        while (!gameOver) {
-            long startTime = System.currentTimeMillis();
-
-            updateGame();
-            repaint();
-
-            long elapsedTime = System.currentTimeMillis() - startTime;
-            long sleepTime = Math.max(16 - elapsedTime, 5); // 60 FPS
-
-            try {
-                Thread.sleep(sleepTime);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
-    }
-
-    private void updateGame() {
-        // Atualiza o jogador com base nas plataformas
-        player.update(platforms);
-
-        // Verifica e aplica comandos de movimento
-        if (spacePressed && !player.isJumping()) {
-            player.jump();
-        }
-        if (leftPressed) player.moveLeft();
-        if (rightPressed) player.moveRight();
-
-        // Atualiza as bombas
-        updateBombs();
-
-        // Gerencia o estado de invulnerabilidade
-        if (invulnerable && System.currentTimeMillis() > invulnerabilityEndTime) {
-            invulnerable = false;
-        }
-
-        // Verifica coleta de itens
-        checkCollectibleCollision();
-
-        // Adiciona novas bombas com chance definida pela dificuldade
-        if (random.nextInt(100) < bombSpawnChance) {
-            bombs.add(new Bomb(random.nextInt(getWidth() - 30), 0));
-        }
-
-        // Verifica se o jogador caiu fora da tela
-        if (player.getY() > getHeight()) {
-            gameOver = true;
-            endGame();
-        }
-    }
-
-    // Atualiza as bombas e verifica colisões
-    private void updateBombs() {
-        Iterator<Bomb> iterator = bombs.iterator();
-        while (iterator.hasNext()) {
-            Bomb bomb = iterator.next();
-            bomb.update(bombSpeed);
-
-            if (bomb.hasExploded()) {
-                iterator.remove();
-                continue;
-            }
-
-            // Verifica colisão com o jogador
-            if (!invulnerable && bomb.isCollidingWith(player.getBounds())) {
-                handlePlayerHitByBomb();
-                if (gameOver) return; // Encerra o jogo se vidas acabarem
-            }
-        }
-    }
-
-    // Gerencia o evento de colisão entre jogador e bomba
-    private void handlePlayerHitByBomb() {
-        lives--;
-        invulnerable = true;
-        invulnerabilityEndTime = System.currentTimeMillis() + 3000; // 3 segundos de invulnerabilidade
-
-        if (lives <= 0) {
-            gameOver = true;
-            endGame();
-        }
-    }
-
-    // Verifica colisão com itens coletáveis
-    private void checkCollectibleCollision() {
-        if (collectiblePosition != null &&
-                new Rectangle(collectiblePosition.x, collectiblePosition.y, 30, 30)
-                        .intersects(player.getBounds())) {
-
-            itemsCollected++;
-            score += (itemsCollected % 10 == 0) ? 50 : 10; // 50 pontos a cada 10 itens, caso contrário, 10 pontos
-            spawnCollectible();
-        }
-    }
-
-
-    private void endGame() {
-        frame.getContentPane().removeAll();
-
-        JLabel gameOverLabel = new JLabel("Game Over!", SwingConstants.CENTER);
-        gameOverLabel.setFont(new Font("Arial", Font.BOLD, 36));
-        frame.add(gameOverLabel);
-        frame.revalidate();
-        frame.repaint();
-
-        // Cria um timer para retornar ao menu principal após 5 segundos
-        Timer timer = new Timer(5000, e -> showMainMenu());
-        timer.setRepeats(false); // Garante que o timer execute apenas uma vez
-        timer.start();
-    }
-
-    // Metodo para exibir o menu principal
-    private void showMainMenu() {
-        frame.getContentPane().removeAll();
-        frame.getContentPane().add(new Menu(frame)); // Adiciona a tela de menu principal
-        frame.revalidate();
-        frame.repaint();
-    }
-
 
     @Override
     public void paintComponent(Graphics g) {
@@ -288,7 +150,7 @@ public class Level1 extends JPanel implements Runnable, KeyListener {
         if (invulnerable && (System.currentTimeMillis() / 200 % 2 == 0)) {
             g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.5f));
             player.draw(g2);
-            g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 1.0f));
+            g2.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.5f));
         } else {
             player.draw(g2);
         }
@@ -322,6 +184,89 @@ public class Level1 extends JPanel implements Runnable, KeyListener {
 
     @Override
     public void keyTyped(KeyEvent e) {}
+
+    @Override
+    public void run() {
+        while (!gameOver) {
+            long startTime = System.currentTimeMillis();
+
+            updateGame();
+            repaint();
+
+            long elapsedTime = System.currentTimeMillis() - startTime;
+            long sleepTime = Math.max(16 - elapsedTime, 5); // 60 FPS
+
+            try {
+                Thread.sleep(sleepTime);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+
+    private void updateGame() {
+        adjustDifficulty(); // Ajusta a dificuldade dinamicamente com base na pontuação
+
+        // Atualiza o jogador com base nas plataformas
+        player.update(platforms);
+
+        // Verifica e aplica comandos de movimento
+        if (spacePressed && !player.isJumping()) {
+            player.jump();
+        }
+        if (leftPressed) player.moveLeft();
+        if (rightPressed) player.moveRight();
+
+        // Atualiza as bombas
+        updateBombs();
+
+        // Gerencia o estado de invulnerabilidade
+        if (invulnerable && System.currentTimeMillis() > invulnerabilityEndTime) {
+            invulnerable = false;
+        }
+
+        // Verifica coleta de itens
+        checkCollectibleCollision();
+
+        // Adiciona novas bombas com chance definida pela dificuldade
+        if (random.nextInt(100) < bombSpawnChance) {
+            bombs.add(new Bomb(random.nextInt(getWidth() - 30), 0));
+        }
+
+        // Verifica se o jogador caiu fora da tela
+        if (player.getY() > getHeight()) {
+            gameOver = true;
+            endGame();
+        }
+    }
+
+    private void adjustDifficulty() {
+        String difficulty = GameSettings.getInstance().getDifficulty();
+
+        // Definir valores base de dificuldade
+        switch (difficulty) {
+            case "Fácil":
+                bombSpawnChance = 1;
+                bombSpeed = 3;
+                break;
+            case "Médio":
+                bombSpawnChance = 3;
+                bombSpeed = 5;
+                break;
+            case "Difícil":
+                bombSpawnChance = 6;
+                bombSpeed = 7;
+                break;
+            default:
+                bombSpawnChance = 2;
+                bombSpeed = 4;
+        }
+
+        // Incremento dinâmico com base na pontuação
+        int difficultyLevel = score / 100; // Incrementa a cada 100 pontos
+        bombSpeed += difficultyLevel; // Aumenta a velocidade
+        bombSpawnChance += difficultyLevel / 3; // Aumenta a chance de surgimento de bombas
+    }
 
     private static class Bomb {
         private final int x;
@@ -399,4 +344,77 @@ public class Level1 extends JPanel implements Runnable, KeyListener {
             return y;
         }
     }
+
+    // Atualiza as bombas e verifica colisões
+    private void updateBombs() {
+        Iterator<Bomb> iterator = bombs.iterator();
+        while (iterator.hasNext()) {
+            Bomb bomb = iterator.next();
+            bomb.update(bombSpeed);
+
+            if (bomb.hasExploded()) {
+                iterator.remove();
+                continue;
+            }
+
+            // Verifica colisão com o jogador
+            if (!invulnerable && bomb.isCollidingWith(player.getBounds())) {
+                handlePlayerHitByBomb();
+                if (gameOver) return; // Encerra o jogo se vidas acabarem
+            }
+        }
+    }
+
+    // Gerencia o evento de colisão entre jogador e bomba
+    private void handlePlayerHitByBomb() {
+        lives--;
+        invulnerable = true;
+        invulnerabilityEndTime = System.currentTimeMillis() + 3000; // 3 segundos de invulnerabilidade
+
+        if (lives <= 0) {
+            gameOver = true;
+            endGame();
+        }
+    }
+
+    private void spawnCollectible() {
+        Platform platform = platforms.get(random.nextInt(platforms.size() - 1)); // Ignorar o chão
+        collectiblePosition = new Point(platform.getX() + platform.getWidth() / 2 - 15, platform.getY() - 30);
+    }
+
+    // Verifica colisão com itens coletáveis
+    private void checkCollectibleCollision() {
+        if (collectiblePosition != null &&
+                new Rectangle(collectiblePosition.x, collectiblePosition.y, 30, 30)
+                        .intersects(player.getBounds())) {
+
+            itemsCollected++;
+            score += (itemsCollected % 10 == 0) ? 50 : 10; // 50 pontos a cada 10 itens, caso contrário, 10 pontos
+            spawnCollectible();
+        }
+    }
+
+    private void endGame() {
+        frame.getContentPane().removeAll();
+
+        JLabel gameOverLabel = new JLabel("Game Over!", SwingConstants.CENTER);
+        gameOverLabel.setFont(new Font("Arial", Font.BOLD, 36));
+        frame.add(gameOverLabel);
+        frame.revalidate();
+        frame.repaint();
+
+        // Cria um timer para retornar ao menu principal após 5 segundos
+        Timer timer = new Timer(5000, e -> showMainMenu());
+        timer.setRepeats(false); // Garante que o timer execute apenas uma vez
+        timer.start();
+    }
+
+    // Metodo para exibir o menu principal
+    private void showMainMenu() {
+        frame.getContentPane().removeAll();
+        frame.getContentPane().add(new Menu(frame)); // Adiciona a tela de menu principal
+        frame.revalidate();
+        frame.repaint();
+    }
+
 }
